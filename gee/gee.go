@@ -3,6 +3,7 @@ package gee
 import (
 	"log"
 	"net/http"
+	"strings"
 )
 
 // 定义一个 handler 方法，是用户定义自己的路由 handler 的统一窗口
@@ -52,6 +53,11 @@ func (group *RouterGroup) NewGroup(prefix string) *RouterGroup {
 	engine.groups = append(engine.groups, newGroup)
 
 	return newGroup
+}
+
+// 某个组想添加一个自定义的中间件
+func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
+	group.middlewares = append(group.middlewares, middlewares...)
 }
 
 // addRouter 添加路由信息
@@ -104,6 +110,14 @@ func (engine *Engine) Run(addr string) (err error) {
 // @author IAMLEIzZ
 // @date 2024-10-21 01:11:44
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	var middleware []HandlerFunc
+	for _, group := range engine.groups {
+		// 当前路径是这个组的子组，因此要把其中间件全部继承给当前组
+		if strings.HasPrefix(req.URL.Path, group.prefix) {
+			middleware = append(middleware, group.middlewares...)
+		}
+	}
 	c := newContext(w, req)
+	c.handlers = middleware
 	engine.router.handle(c)
 }
