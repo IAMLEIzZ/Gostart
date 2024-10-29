@@ -27,6 +27,8 @@ router_test 为 Trie 路由树的测试方法
 整个流程大致是，现在 main 中注册好分组，然后给这个分组指定要添加的中间件方法，handler 方法和中间件方法都会被视为 handler（本质上都是业务处理）。
 当一个请求传来服务器的时候，服务器先会判断当前这个请求在哪个分组，然后把这个分组和这个分组的父组所包含的中间件都复制给当前请求的 context.handler 中，
 然后把请求路径对应的 handler 方法也加入到 context.handler 中，由 context.next() 统一执行。
+### version 0.4.0
+支持 HTML 模板渲染， 支持静态资源服务
 ```
 // handler 执行
 func (c *Context) Next() {

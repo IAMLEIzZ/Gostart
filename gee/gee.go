@@ -3,7 +3,9 @@ package gee
 import (
 	"log"
 	"net/http"
+	"path"
 	"strings"
+	"html/template"
 )
 
 // 定义一个 handler 方法，是用户定义自己的路由 handler 的统一窗口
@@ -22,6 +24,16 @@ type Engine struct {
 	*RouterGroup // 嵌套了 RouterGroup，所以 Engine 自身也可以作为一个路由组， 这样 Engine 可以直接调用 RouterGroup 的私有方法
 	router       *router
 	groups       []*RouterGroup
+	htmlTemplates *template.Template
+	funcMap template.FuncMap
+}
+
+func (engine *Engine) SetFuncMap(funcMap template.FuncMap) {
+	engine.funcMap = funcMap
+}
+
+func (engine *Engine) LoadHTMLGlob(pattern string) {
+	engine.htmlTemplates = template.Must(template.New("").Funcs(engine.funcMap).ParseGlob(pattern))
 }
 
 // NewEngine 用户创建一个新的 engine
@@ -119,5 +131,30 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	c := newContext(w, req)
 	c.handlers = middleware
+	c.engine = engine
 	engine.router.handle(c)
 }
+
+func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem) HandlerFunc{
+	// 将相对路径和文件系统拼接起来
+	absolutePath := path.Join(group.prefix, relativePath)
+	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
+
+	return func(c *Context) {
+		file := c.Param("filepath")
+		if _, err := fs.Open(file); err != nil {
+			c.Status(http.StatusNotFound)
+			return 
+		}
+		fileServer.ServeHTTP(c.Writer, c.Req)
+	}
+}
+
+func (group *RouterGroup) Static(relativePath string, root string) {
+	// 创建一个 handler
+	handler := group.createStaticHandler(relativePath, http.Dir(root))
+	urlPattern := path.Join(relativePath, "/*filepath")	// 这里是将相对路径和通配符拼接起来
+	// 注册 handler
+	group.Get(urlPattern, handler)
+}
+

@@ -22,7 +22,17 @@ type Context struct {
 	// 中间件数组
 	handlers []HandlerFunc
 	index    int
+	engine   *Engine
 }
+
+func (c *Context) HTML(code int, name string, data interface{}){
+	c.SetHeader("Content-Type", "text/html")
+	c.Status(code)
+	if err := c.engine.htmlTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
+		c.Fail(500, err.Error())
+	}
+}
+
 
 // newContext
 // @param w
@@ -119,18 +129,6 @@ func (c *Context) JSON(code int, obj interface{}) {
 func (c *Context) Data(code int, data []byte) {
 	c.Status(code)
 	c.Writer.Write(data)
-}
-
-// HTML
-// @receiver c
-// @param code
-// @param html
-// @author IAMLEIzZ
-// @date 2024-10-21 03:15:26
-func (c *Context) HTML(code int, html string) {
-	c.SetHeader("Content-Type", "text/plain")
-	c.Status(code)
-	c.Writer.Write([]byte(html))
 }
 
 func (c *Context) Param(key string) string {
