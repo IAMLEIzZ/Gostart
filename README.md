@@ -29,6 +29,8 @@ router_test 为 Trie 路由树的测试方法
 然后把请求路径对应的 handler 方法也加入到 context.handler 中，由 context.next() 统一执行。
 ### version 0.4.0
 支持 HTML 模板渲染， 支持静态资源服务
+### version 0.5.0
+支持作物恢复，将错误恢复功能制作成中间件的形式，然后成默认启动的全局中间件即可
 ```
 // handler 执行
 func (c *Context) Next() {

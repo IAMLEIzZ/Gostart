@@ -28,6 +28,12 @@ type Engine struct {
 	funcMap template.FuncMap
 }
 
+func Default() *Engine {
+	engine := NewEngine()
+	engine.Use(Logger(), Recovery())
+	return engine
+}
+
 func (engine *Engine) SetFuncMap(funcMap template.FuncMap) {
 	engine.funcMap = funcMap
 }
